@@ -1,77 +1,118 @@
 # CNN3Way Brain MRI Classification
 
-This repository contains a from-scratch NumPy implementation of a convolutional neural network for binary brain MRI tumor classification.
+> [!SUMMARY]
+> A from-scratch NumPy deep learning project for binary brain MRI tumor classification. The current implementation contains the completed CNN Base model, with InceptionNet and ResNet planned as the next two architectures for comparison.
 
-The long-term goal of the project is to compare three CNN-style architectures on the same or similar MRI dataset:
+## Project Snapshot
+
+| Field | Details |
+|---|---|
+| Task | Brain MRI tumor detection |
+| Type | Binary image classification |
+| Classes | `tumor` and `no tumor` |
+| Current model | CNN Base |
+| Planned models | InceptionNet, ResNet |
+| Framework | NumPy from scratch |
+| Dataset size used | 253 images |
+| Validation method | Stratified 5-fold cross-validation |
+| Main runner | `main_cnn1.py` |
+
+> [!IMPORTANT]
+> This project is for learning, experimentation, and academic demonstration. It is not a medical diagnostic system.
+
+## Table of Contents
+
+- [Project Goal](#project-goal)
+- [Current Repository State](#current-repository-state)
+- [Dataset Layout](#dataset-layout)
+- [Installation](#installation)
+- [How To Run](#how-to-run)
+- [CNN Base Architecture](#cnn-base-architecture)
+- [How The CNN Works](#how-the-cnn-works)
+- [Training Strategy](#training-strategy)
+- [Latest CNN1 Results](#latest-cnn1-results)
+- [Result Visualizations](#result-visualizations)
+- [Output Files](#output-files)
+- [Code Structure](#code-structure)
+- [Prediction With Saved Parameters](#prediction-with-saved-parameters)
+- [Limitations](#limitations)
+- [Next Steps](#next-steps)
+
+## Project Goal
+
+The project is designed to compare three convolutional neural network architectures on the same or similar brain MRI dataset:
 
 1. CNN Base
 2. InceptionNet
 3. ResNet
 
-At the current stage, the CNN Base architecture is implemented and evaluated using stratified 5-fold cross-validation.
+The first architecture, CNN Base, is already implemented from scratch using NumPy. The next stages will extend the project with InceptionNet-style and ResNet-style models while reusing the same data pipeline, training loop, metric calculations, and output structure.
 
-## Current Status
+## Current Repository State
 
 Implemented:
 
-- Brain MRI image loading and preprocessing
-- Binary tumor/no-tumor classification
-- CNN Base implemented from scratch using NumPy
-- Manual convolution, pooling, dense layers, activations, and backpropagation
-- Adam optimizer from scratch
+- MRI image loading and preprocessing
+- Binary labels for tumor and no-tumor classes
+- CNN Base model from scratch
+- Manual convolution, max-pooling, dense layers, activations, and backpropagation
 - Dropout and L2 regularization
-- Stratified k-fold validation
+- Adam optimizer from scratch
+- Stratified k-fold cross-validation
 - Dynamic early stopping per fold
-- Per-fold and total metric reporting
-- Accuracy, cost, and confusion matrix plots
-- Saved best-fold parameters for future prediction
+- Accuracy, precision, recall, F1, and confusion matrix metrics
+- Per-fold and total plots
+- Best-fold parameter saving for later prediction
 
 Planned:
 
-- InceptionNet-style model from scratch
-- ResNet-style model from scratch
-- Comparison of all three architectures using the same training/evaluation pipeline
+- InceptionNet implementation from scratch
+- ResNet implementation from scratch
+- Architecture-level comparison using the same evaluation policy
+- Single-image prediction script
 
 ## Dataset Layout
 
-The dataset is not committed to this repository. Place the dataset locally using this structure:
+The dataset is intentionally not committed to GitHub. Place it locally like this:
 
 ```text
 data/
   yes/
-    image files for tumor cases
+    tumor MRI images
   no/
-    image files for no-tumor cases
+    no-tumor MRI images
 ```
 
-Labels:
+Class mapping:
 
 ```text
 yes -> 1
 no  -> 0
 ```
 
-Supported image extensions:
+Supported image formats:
 
 ```text
 .jpg, .jpeg, .png, .bmp, .webp
 ```
 
-During the last recorded run, the dataset contained:
+Latest recorded local dataset:
 
-```text
-Tumor images:    155
-No-tumor images: 98
-Total images:    253
-```
+| Class | Count |
+|---|---:|
+| Tumor | 155 |
+| No tumor | 98 |
+| Total | 253 |
 
-Each image is resized to `64 x 64`, converted to grayscale, normalized to `[0, 1]`, and stored with shape:
+Each image is:
 
-```text
-(64, 64, 1)
-```
+1. Loaded with Pillow
+2. Converted to grayscale
+3. Resized to `64 x 64`
+4. Normalized to `[0, 1]`
+5. Stored as `(64, 64, 1)`
 
-The final loaded dataset shape is:
+Final data tensors:
 
 ```text
 X: (253, 64, 64, 1)
@@ -80,13 +121,13 @@ Y: (253, 1)
 
 ## Installation
 
-Create and activate a Python environment, then install dependencies:
+Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Required libraries:
+Dependencies:
 
 ```text
 numpy
@@ -94,19 +135,18 @@ Pillow
 matplotlib
 ```
 
-If `matplotlib` is not available, the training script has a Pillow-based fallback for saving basic plots.
+> [!NOTE]
+> If `matplotlib` is unavailable, `main_cnn1.py` includes a Pillow-based fallback that still saves basic plot images.
 
-## Running Training
+## How To Run
 
-Run the main CNN Base experiment:
+Run the CNN Base experiment:
 
 ```bash
 python main_cnn1.py
 ```
 
-On Windows, if `python` is not recognized, use the Python executable installed on your system.
-
-The script prints live training progress:
+The terminal prints live progress:
 
 ```text
 Epoch 1/20 [##############################] 26/26 | batch cost: ... | lr: ...
@@ -118,7 +158,7 @@ Train F1: ... | Val F1: ...
 
 ## CNN Base Architecture
 
-The implemented CNN Base architecture is:
+Current architecture:
 
 ```text
 Input: 64 x 64 x 1
@@ -130,49 +170,24 @@ Dense 64 -> ReLU -> Dropout
 Dense 1 -> Sigmoid
 ```
 
-Detailed shape flow:
+Shape flow:
 
-```text
-Input image:
-64 x 64 x 1
-
-Conv1:
-3 x 3 filters, 8 output channels, stride 1, padding 1
-Output: 64 x 64 x 8
-
-ReLU:
-Keeps positive activations and sets negative activations to zero
-
-MaxPool:
-2 x 2 pool, stride 2
-Output: 32 x 32 x 8
-
-Conv2:
-3 x 3 filters, 16 output channels, stride 1, padding 1
-Output: 32 x 32 x 16
-
-ReLU + Dropout:
-Conv dropout keep probability = 0.85
-
-MaxPool:
-2 x 2 pool, stride 2
-Output: 16 x 16 x 16
-
-Flatten:
-16 x 16 x 16 = 4096 features
-
-Dense hidden layer:
-4096 -> 64
-
-ReLU + Dropout:
-Dense dropout keep probability = 0.75
-
-Output layer:
-64 -> 1
-
-Sigmoid:
-Returns probability of tumor
-```
+| Stage | Operation | Output shape |
+|---|---|---|
+| Input | Grayscale MRI | `64 x 64 x 1` |
+| Conv1 | 8 filters, `3 x 3`, stride 1, pad 1 | `64 x 64 x 8` |
+| ReLU | Non-linearity | `64 x 64 x 8` |
+| MaxPool1 | `2 x 2`, stride 2 | `32 x 32 x 8` |
+| Conv2 | 16 filters, `3 x 3`, stride 1, pad 1 | `32 x 32 x 16` |
+| ReLU | Non-linearity | `32 x 32 x 16` |
+| Dropout | `conv_keep_prob = 0.85` | `32 x 32 x 16` |
+| MaxPool2 | `2 x 2`, stride 2 | `16 x 16 x 16` |
+| Flatten | Vectorization | `4096` |
+| Dense hidden | `4096 -> 64` | `64` |
+| ReLU | Non-linearity | `64` |
+| Dropout | `dense_keep_prob = 0.75` | `64` |
+| Dense output | `64 -> 1` | `1` |
+| Sigmoid | Probability | `1` |
 
 Prediction rule:
 
@@ -181,21 +196,90 @@ probability >= 0.5 -> tumor
 probability < 0.5  -> no tumor
 ```
 
-## Why the Dense Layer Was Updated
+## How The CNN Works
 
-The first CNN Base version connected the flattened feature vector directly to a single sigmoid output:
+### 1. Convolution Layers
+
+The convolution layers scan small filters over the MRI image. Early filters learn simple spatial patterns such as edges, boundaries, bright spots, dark regions, and local texture changes.
+
+The first convolution layer receives a single grayscale channel and produces 8 feature maps:
+
+```text
+64 x 64 x 1 -> 64 x 64 x 8
+```
+
+The second convolution layer takes those learned feature maps and produces 16 deeper feature maps:
+
+```text
+32 x 32 x 8 -> 32 x 32 x 16
+```
+
+### 2. ReLU Activation
+
+ReLU is applied after convolution and dense hidden layers:
+
+```text
+ReLU(x) = max(0, x)
+```
+
+This introduces non-linearity and helps the model learn more complex patterns than a purely linear model could represent.
+
+### 3. Max-Pooling
+
+Max-pooling reduces spatial size while preserving the strongest local activations:
+
+```text
+64 x 64 -> 32 x 32
+32 x 32 -> 16 x 16
+```
+
+This lowers computation and helps the model become less sensitive to tiny shifts in image position.
+
+### 4. Dropout
+
+Dropout randomly disables some activations during training.
+
+Current dropout values:
+
+```text
+conv_keep_prob = 0.85
+dense_keep_prob = 0.75
+```
+
+This means:
+
+- About 15 percent of selected convolution features are dropped during training
+- About 25 percent of hidden dense activations are dropped during training
+
+Dropout is disabled during validation and prediction.
+
+### 5. Flattening
+
+After the second pooling layer, the tensor is:
+
+```text
+16 x 16 x 16
+```
+
+This becomes:
+
+```text
+4096 features
+```
+
+### 6. Dense Classifier
+
+The original CNN Base connected the flattened vector directly to the sigmoid output:
 
 ```text
 4096 -> 1
 ```
 
-That made the classifier head too broad and contributed to overfitting. The updated model uses an intermediate hidden layer:
+That was too broad and encouraged overfitting. The updated classifier head is:
 
 ```text
 4096 -> 64 -> 1
 ```
-
-This gives the model a smaller learned representation before the final sigmoid output. A second dropout layer was also added after the 64-node hidden layer to reduce overfitting.
 
 Current dense parameter shapes:
 
@@ -206,49 +290,88 @@ W4: 64 x 1
 b4: 1 x 1
 ```
 
-## Training Configuration
+### 7. Sigmoid Output
 
-The current CNN Base training configuration is:
+The final sigmoid converts the output into a probability:
 
 ```text
-image_size = (64, 64)
-grayscale = True
-k = 5
-max epochs = 20
-mini_batch_size = 8
-initial_learning_rate = 0.001
-decay_rate = 0.02
-conv_keep_prob = 0.85
-dense_keep_prob = 0.75
-L2 lambda = 0.005
-optimizer = Adam
-beta1 = 0.9
-beta2 = 0.999
-seed = 42
+sigmoid(z) = 1 / (1 + e^-z)
 ```
 
-Learning rate decay:
+The probability is interpreted as the likelihood of the MRI belonging to the tumor class.
+
+## Training Strategy
+
+### Loss Function
+
+The model uses binary cross-entropy:
+
+```text
+Loss = -[y log(a) + (1 - y) log(1 - a)]
+```
+
+where:
+
+```text
+y = true label
+a = predicted probability
+```
+
+### L2 Regularization
+
+L2 regularization penalizes large weights:
+
+```text
+lambda = 0.005
+```
+
+This helps reduce overfitting.
+
+### Optimizer
+
+Adam optimizer is implemented manually in NumPy.
+
+Current values:
+
+```text
+beta1 = 0.9
+beta2 = 0.999
+epsilon = 1e-8
+```
+
+### Learning Rate Decay
+
+The learning rate decays with:
 
 ```text
 lr = initial_lr / (1 + decay_rate * epoch)
 ```
 
-## Dynamic Early Stopping
-
-Each fold can run up to 20 epochs, but it can stop earlier if validation performance stops improving or overfitting becomes too strong.
-
-Current early stopping settings:
+Current settings:
 
 ```text
-early_stopping = True
+initial_learning_rate = 0.001
+decay_rate = 0.02
+```
+
+### Stratified 5-Fold Cross-Validation
+
+The dataset is split into 5 folds while preserving class balance. Each fold trains on about 80 percent of the dataset and validates on the remaining 20 percent.
+
+### Dynamic Early Stopping
+
+Each fold can train up to 20 epochs, but stops earlier when validation performance stops improving or overfitting becomes too strong.
+
+Current settings:
+
+```text
+max epochs = 20
 min_epochs = 5
 patience = 3
 min_delta = 0.001
 overfit_gap = 0.08
 overfit_patience = 2
 ```
-
-The model tracks validation F1, validation accuracy, and validation cost. It restores the best epoch's parameters before computing final fold metrics.
 
 Overfitting guard:
 
@@ -258,27 +381,27 @@ train F1 - validation F1 >= 0.08
 
 and validation cost is worse than the best epoch for 2 consecutive epochs.
 
-This prevents the model from continuing training when training performance keeps improving but validation performance begins to degrade.
+At the end of each fold, the best epoch's parameters are restored before final validation metrics are calculated.
 
-## Results From Latest Recorded CNN Base Run
+## Latest CNN1 Results
 
-5-fold summary:
+5-fold mean metrics:
 
-```text
-Mean accuracy:  0.8225
-Mean precision: 0.8189
-Mean recall:    0.9161
-Mean F1:        0.8632
-```
+| Metric | Value |
+|---|---:|
+| Mean accuracy | 0.8225 |
+| Mean precision | 0.8189 |
+| Mean recall | 0.9161 |
+| Mean F1 | 0.8632 |
 
 Total validation metrics:
 
-```text
-Accuracy:  0.8221
-Precision: 0.8161
-Recall:    0.9161
-F1:        0.8632
-```
+| Metric | Value |
+|---|---:|
+| Accuracy | 0.8221 |
+| Precision | 0.8161 |
+| Recall | 0.9161 |
+| F1 | 0.8632 |
 
 Total confusion matrix:
 
@@ -296,24 +419,43 @@ Matrix format:
 
 Interpretation:
 
-- True negatives: 66
-- False positives: 32
-- False negatives: 13
-- True positives: 142
+| Value | Meaning | Count |
+|---|---|---:|
+| TN | No-tumor correctly predicted as no-tumor | 66 |
+| FP | No-tumor incorrectly predicted as tumor | 32 |
+| FN | Tumor incorrectly predicted as no-tumor | 13 |
+| TP | Tumor correctly predicted as tumor | 142 |
 
-The model has high recall, meaning it catches most tumor cases. The false-positive count is still relatively high, so the model tends to predict tumor more often than no-tumor in uncertain cases.
+The model has high recall, which means it catches most tumor cases. It still has a noticeable number of false positives, so it tends to predict tumor in some uncertain no-tumor cases.
 
 Best fold:
 
-```text
-Fold 5
-Accuracy:  0.9200
-Precision: 0.9091
-Recall:    0.9677
-F1:        0.9375
-```
+| Metric | Fold 5 |
+|---|---:|
+| Accuracy | 0.9200 |
+| Precision | 0.9091 |
+| Recall | 0.9677 |
+| F1 | 0.9375 |
 
-The best fold's parameters are saved after training.
+## Result Visualizations
+
+### Total Cost Curve
+
+![CNN1 Total Cost Curve](results/cnn1/plots/cnn1_total_cost_curve.png)
+
+The training cost decreases steadily, while validation cost remains higher and fluctuates. This shows that the model learns the training data strongly, and early stopping is important to avoid uncontrolled overfitting.
+
+### Total Accuracy Curve
+
+![CNN1 Total Accuracy Curve](results/cnn1/plots/cnn1_total_accuracy_curve.png)
+
+Training accuracy rises sharply, while validation accuracy improves more slowly and remains less stable. This is expected with a small dataset and confirms why fold-level early stopping is useful.
+
+### Total Confusion Matrix
+
+![CNN1 Total Confusion Matrix](results/cnn1/plots/cnn1_total_confusion_matrix.png)
+
+The confusion matrix shows strong tumor detection recall, with 142 true positives and 13 false negatives across all validation folds.
 
 ## Output Files
 
@@ -323,21 +465,13 @@ Metrics:
 results/cnn1/metrics/cnn1_kfold_summary.json
 ```
 
-This file stores:
-
-- Training configuration
-- Mean k-fold metrics
-- Per-fold metrics
-- Total validation metrics
-- Total confusion matrix
-
 Saved best-fold parameters:
 
 ```text
 results/cnn1/metrics/updated_parameters_1.json
 ```
 
-This file is ignored by Git because it can become large. It is generated locally after training.
+This file is generated locally after training and ignored by Git because it can become large.
 
 Per-fold plots:
 
@@ -356,7 +490,7 @@ results/cnn1/plots/cnn1_total_cost_curve.png
 results/cnn1/plots/cnn1_total_confusion_matrix.png
 ```
 
-Simplified report outputs:
+Report-friendly JPG outputs:
 
 ```text
 Output/CNN1Accuracy.jpg
@@ -364,21 +498,21 @@ Output/CNN1Cost.jpg
 Output/CNN1ConfMatrix.jpg
 ```
 
-## File-by-File Code Overview
+## Code Structure
 
 ### `data.py`
 
 Handles dataset loading and splitting.
 
-Main responsibilities:
+Responsibilities:
 
-- Read image files from `data/yes` and `data/no`
+- Load image files from `data/yes` and `data/no`
 - Resize images to `64 x 64`
 - Convert images to grayscale
 - Normalize pixel values to `[0, 1]`
-- Create labels
-- Shuffle the dataset
-- Build train/test, train/validation/test, and stratified k-fold splits
+- Create binary labels
+- Shuffle data
+- Create stratified k-fold splits
 
 Important functions:
 
@@ -386,29 +520,22 @@ Important functions:
 load_image_as_array()
 get_image_paths()
 load_brain_mri_dataset()
-train_test_split()
-train_val_test_split()
 create_stratified_k_folds()
 load_brain_mri_kfold_data()
-print_class_balance()
 ```
 
 ### `operations.py`
 
-Contains low-level neural network math operations implemented manually with NumPy.
+Contains the low-level neural network math.
 
-Main responsibilities:
+Responsibilities:
 
 - Zero padding
-- Convolution forward pass
-- Max pooling forward pass
-- Flattening
-- Dense layer forward pass
+- Convolution forward and backward pass
+- Max-pooling forward and backward pass
+- Dense layer forward and backward pass
 - ReLU and sigmoid activations
-- Dense layer backward pass
-- Convolution backward pass
-- Max pooling backward pass
-- ReLU backward pass
+- Flatten operation
 
 Important functions:
 
@@ -416,13 +543,11 @@ Important functions:
 zero_pad()
 relu()
 sigmoid()
-conv_single_step()
 conv_forward()
 max_pool_forward()
 flatten()
 dense_forward()
 relu_backward()
-sigmoid_backward()
 dense_backward()
 conv_backward()
 max_pool_backward()
@@ -430,25 +555,23 @@ max_pool_backward()
 
 ### `cnn1_core.py`
 
-Defines the CNN Base model itself.
+Defines the CNN Base model.
 
-Main responsibilities:
+Responsibilities:
 
 - Initialize CNN parameters
 - Run forward propagation
 - Apply dropout
-- Compute binary cross-entropy cost with optional L2 regularization
+- Compute binary cross-entropy cost
+- Add L2 regularization
 - Run backpropagation
-- Initialize Adam optimizer state
-- Update parameters using Adam
+- Run Adam parameter updates
 - Predict labels and probabilities
-- Load saved parameters from JSON
+- Load saved parameter JSON
 
 Important functions:
 
 ```text
-dropout_forward()
-dropout_backward()
 initialize_cnn1_parameters()
 cnn1_forward()
 compute_cost()
@@ -461,15 +584,12 @@ load_cnn1_parameters_from_json()
 
 ### `cnn1_train.py`
 
-Contains reusable training helpers.
+Contains reusable training helpers outside the full k-fold experiment.
 
-This file is useful for smaller experiments or testing the CNN outside the full k-fold experiment.
-
-Main responsibilities:
+Responsibilities:
 
 - Create mini-batches
 - Apply learning rate decay
-- Compute accuracy
 - Train CNN1 on a normal train/validation split
 - Evaluate CNN1 on test data
 
@@ -485,32 +605,28 @@ evaluate_cnn1()
 
 ### `main_cnn1.py`
 
-This is the main experiment runner.
+Main experiment runner.
 
-Main responsibilities:
+Responsibilities:
 
-- Create output directories
-- Load the dataset
-- Create stratified k-fold splits
-- Train one fold at a time
-- Print live progress bars
+- Create output folders
+- Load dataset
+- Build stratified folds
+- Train each fold
+- Print progress bars
 - Apply dynamic early stopping
-- Restore best epoch parameters
-- Calculate metrics
-- Plot cost curves, accuracy curves, and confusion matrices
+- Restore best fold parameters
+- Compute metrics
+- Save plots
 - Save summary JSON
 - Save best-fold parameters
 
 Important functions:
 
 ```text
-make_output_dirs()
-print_progress_bar()
-confusion_matrix_binary()
-classification_metrics()
-evaluate_model()
-train_one_fold()
 run_cnn1_experiment()
+train_one_fold()
+classification_metrics()
 summarize_kfold_metrics()
 summarize_total_metrics()
 save_experiment_summary()
@@ -519,7 +635,7 @@ save_updated_parameters()
 
 ## Prediction With Saved Parameters
 
-After training, load the saved best-fold parameters and run prediction:
+After training, load the best-fold saved weights:
 
 ```python
 from cnn1_core import load_cnn1_parameters_from_json, predict_cnn1
@@ -531,7 +647,7 @@ parameters = load_cnn1_parameters_from_json(
 predictions, probabilities = predict_cnn1(X_new, parameters)
 ```
 
-`X_new` must be preprocessed in the same format used during training:
+`X_new` must be preprocessed the same way as training images:
 
 ```text
 (m, 64, 64, 1)
@@ -539,11 +655,9 @@ predictions, probabilities = predict_cnn1(X_new, parameters)
 
 with pixel values normalized to `[0, 1]`.
 
-## GitHub Notes
+## Repository Notes
 
-The repository ignores local dataset files and large generated parameter files.
-
-Ignored:
+The repository ignores local dataset files and large generated parameter files:
 
 ```text
 data/
@@ -553,22 +667,22 @@ results/cnn1/metrics/updated_parameters_*.json
 __pycache__/
 ```
 
-This keeps the repository focused on source code, results summaries, and plots while avoiding large or dataset-specific files.
+This keeps the repository lightweight and focused on source code, result summaries, and plots.
 
 ## Limitations
 
-- The CNN is implemented from scratch, so training is slow compared to PyTorch or TensorFlow.
-- The dataset is small and imbalanced.
-- The model has high recall but still produces a noticeable number of false positives.
-- Current implementation is only CNN Base; InceptionNet and ResNet are planned but not yet implemented.
+- The model is written from scratch, so training is much slower than PyTorch or TensorFlow.
+- The dataset is small.
+- The dataset is class-imbalanced.
+- The current model has high recall but still produces false positives.
+- Only CNN Base is implemented so far.
 
 ## Next Steps
 
-Planned improvements:
-
-- Add InceptionNet from scratch using NumPy
-- Add ResNet from scratch using NumPy
-- Reuse the same data loading and metric pipeline for all architectures
-- Compare CNN Base, InceptionNet, and ResNet using the same folds and hyperparameter policy
-- Add a prediction script for single-image inference
-- Improve README with dataset source and project report references
+- Implement InceptionNet from scratch using NumPy
+- Implement ResNet from scratch using NumPy
+- Compare all three architectures using the same folds and metrics
+- Add a single-image prediction script
+- Add model comparison tables
+- Add dataset source details
+- Add project report references
