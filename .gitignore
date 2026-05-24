@@ -1,0 +1,32 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments and local config
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dataset files should be downloaded separately, not committed
+data/
+archive.zip
+*.zip
+
+# Large/generated trained model weights
+results/cnn1/metrics/updated_parameters_*.json
+
+# OS files
+.DS_Store
+Thumbs.db
