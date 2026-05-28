@@ -26,6 +26,7 @@ archive.zip
 
 # Large/generated trained model weights
 results/cnn1/metrics/updated_parameters_*.json
+results/cnn2/metrics/updated_parameters_*.json
 
 # OS files
 .DS_Store

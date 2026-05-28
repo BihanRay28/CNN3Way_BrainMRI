@@ -1,7 +1,7 @@
 # CNN3Way Brain MRI Classification
 
 > [!SUMMARY]
-> A from-scratch NumPy deep learning project for binary brain MRI tumor classification. The current implementation contains the completed CNN Base model, with InceptionNet and ResNet planned as the next two architectures for comparison.
+> A from-scratch NumPy deep learning project for binary brain MRI tumor classification. The current implementation contains two completed architectures: CNN Base and an Inception-style CNN, with ResNet planned as the third architecture for comparison.
 
 ## Project Snapshot
 
@@ -10,12 +10,12 @@
 | Task | Brain MRI tumor detection |
 | Type | Binary image classification |
 | Classes | `tumor` and `no tumor` |
-| Current model | CNN Base |
-| Planned models | InceptionNet, ResNet |
+| Current models | CNN Base, CNN2 Inception |
+| Planned model | ResNet |
 | Framework | NumPy from scratch |
 | Dataset size used | 253 images |
 | Validation method | Stratified 5-fold cross-validation |
-| Main runner | `main_cnn1.py` |
+| Main runners | `main_cnn1.py`, `main_cnn2.py` |
 
 > [!IMPORTANT]
 > This project is for learning, experimentation, and academic demonstration. It is not a medical diagnostic system.
@@ -28,9 +28,12 @@
 - [Installation](#installation)
 - [How To Run](#how-to-run)
 - [CNN Base Architecture](#cnn-base-architecture)
+- [CNN2 Inception Architecture](#cnn2-inception-architecture)
 - [How The CNN Works](#how-the-cnn-works)
 - [Training Strategy](#training-strategy)
 - [Latest CNN1 Results](#latest-cnn1-results)
+- [Latest CNN2 Results](#latest-cnn2-results)
+- [CNN1 vs CNN2 Comparison](#cnn1-vs-cnn2-comparison)
 - [Result Visualizations](#result-visualizations)
 - [Output Files](#output-files)
 - [Code Structure](#code-structure)
@@ -43,10 +46,10 @@
 The project is designed to compare three convolutional neural network architectures on the same or similar brain MRI dataset:
 
 1. CNN Base
-2. InceptionNet
+2. CNN2 Inception
 3. ResNet
 
-The first architecture, CNN Base, is already implemented from scratch using NumPy. The next stages will extend the project with InceptionNet-style and ResNet-style models while reusing the same data pipeline, training loop, metric calculations, and output structure.
+The first two architectures, CNN Base and CNN2 Inception, are implemented from scratch using NumPy. Both reuse the same data pipeline, stratified folds, training policy, metric calculations, and output structure. The next stage is a ResNet-style model for the third-way comparison.
 
 ## Current Repository State
 
@@ -55,7 +58,9 @@ Implemented:
 - MRI image loading and preprocessing
 - Binary labels for tumor and no-tumor classes
 - CNN Base model from scratch
+- CNN2 Inception model from scratch
 - Manual convolution, max-pooling, dense layers, activations, and backpropagation
+- Same-shape Inception max-pool branches and branch concatenation
 - Dropout and L2 regularization
 - Adam optimizer from scratch
 - Stratified k-fold cross-validation
@@ -66,7 +71,6 @@ Implemented:
 
 Planned:
 
-- InceptionNet implementation from scratch
 - ResNet implementation from scratch
 - Architecture-level comparison using the same evaluation policy
 - Single-image prediction script
@@ -136,7 +140,7 @@ matplotlib
 ```
 
 > [!NOTE]
-> If `matplotlib` is unavailable, `main_cnn1.py` includes a Pillow-based fallback that still saves basic plot images.
+> If `matplotlib` is unavailable, `main_cnn1.py` and `main_cnn2.py` include a Pillow-based fallback that still saves basic plot images.
 
 ## How To Run
 
@@ -145,6 +149,15 @@ Run the CNN Base experiment:
 ```bash
 python main_cnn1.py
 ```
+
+Run the CNN2 Inception experiment:
+
+```bash
+python main_cnn2.py
+```
+
+> [!NOTE]
+> CNN2 was trained with hand-written NumPy convolution and backpropagation. The full 5-fold run took about 12 hours locally, which is expected for this style of from-scratch implementation.
 
 The terminal prints live progress:
 
@@ -195,6 +208,62 @@ Prediction rule:
 probability >= 0.5 -> tumor
 probability < 0.5  -> no tumor
 ```
+
+## CNN2 Inception Architecture
+
+CNN2 uses two Inception-style blocks before the dense classifier. Each block learns parallel features at the same spatial resolution, then concatenates the branch outputs along the channel axis.
+
+Architecture:
+
+```text
+Input: 64 x 64 x 1
+
+Inception Block 1
+- 1 x 1 conv branch
+- 1 x 1 -> 3 x 3 conv branch
+- maxpool -> 1 x 1 conv branch
+Concatenate
+Dropout
+
+Inception Block 2
+- 1 x 1 conv branch
+- 1 x 1 -> 3 x 3 conv branch
+- maxpool -> 1 x 1 conv branch
+Concatenate
+Dropout
+
+Flatten
+Dense 64
+ReLU
+Dropout
+Dense 1
+Sigmoid
+```
+
+Default branch filters:
+
+| Block | 1 x 1 branch | 1 x 1 -> 3 x 3 branch | maxpool -> 1 x 1 branch | Concatenated channels |
+|---|---:|---:|---:|---:|
+| Inception Block 1 | 4 | 4 | 4 | 12 |
+| Inception Block 2 | 4 | 4 | 4 | 12 |
+
+Shape flow:
+
+| Stage | Operation | Output shape |
+|---|---|---|
+| Input | Grayscale MRI | `64 x 64 x 1` |
+| Inception Block 1 | Parallel branches and concatenate | `64 x 64 x 12` |
+| Dropout | `conv_keep_prob = 0.85` | `64 x 64 x 12` |
+| Inception Block 2 | Parallel branches and concatenate | `64 x 64 x 12` |
+| Dropout | `conv_keep_prob = 0.85` | `64 x 64 x 12` |
+| Flatten | Vectorization | `49152` |
+| Dense hidden | `49152 -> 64` | `64` |
+| ReLU | Non-linearity | `64` |
+| Dropout | `dense_keep_prob = 0.75` | `64` |
+| Dense output | `64 -> 1` | `1` |
+| Sigmoid | Probability | `1` |
+
+The Inception branches let the model compare direct pointwise features, local `3 x 3` patterns, and pooled context at the same resolution. This made CNN2 more sensitive to tumor cases than CNN1 on the same folds, reducing false negatives from 13 to 9.
 
 ## How The CNN Works
 
@@ -437,6 +506,75 @@ Best fold:
 | Recall | 0.9677 |
 | F1 | 0.9375 |
 
+## Latest CNN2 Results
+
+CNN2 was trained on the same dataset and stratified 5-fold split policy as CNN1.
+
+5-fold mean metrics:
+
+| Metric | Value |
+|---|---:|
+| Mean accuracy | 0.8141 |
+| Mean precision | 0.7958 |
+| Mean recall | 0.9419 |
+| Mean F1 | 0.8613 |
+
+Total validation metrics:
+
+| Metric | Value |
+|---|---:|
+| Accuracy | 0.8142 |
+| Precision | 0.7935 |
+| Recall | 0.9419 |
+| F1 | 0.8614 |
+
+Total confusion matrix:
+
+```text
+[[ 60  38]
+ [  9 146]]
+```
+
+Matrix format:
+
+```text
+[[TN FP]
+ [FN TP]]
+```
+
+Interpretation:
+
+| Value | Meaning | Count |
+|---|---|---:|
+| TN | No-tumor correctly predicted as no-tumor | 60 |
+| FP | No-tumor incorrectly predicted as tumor | 38 |
+| FN | Tumor incorrectly predicted as no-tumor | 9 |
+| TP | Tumor correctly predicted as tumor | 146 |
+
+Best fold:
+
+| Metric | Fold 5 |
+|---|---:|
+| Accuracy | 0.8400 |
+| Precision | 0.7949 |
+| Recall | 1.0000 |
+| F1 | 0.8857 |
+
+## CNN1 vs CNN2 Comparison
+
+CNN2 improves the tumor-detection sensitivity of the previous CNN Base architecture. Its total validation recall increased from `0.9161` to `0.9419`, true positives increased from `142` to `146`, and false negatives dropped from `13` to `9`.
+
+| Metric | CNN1 Base | CNN2 Inception | Change |
+|---|---:|---:|---:|
+| Total accuracy | 0.8221 | 0.8142 | -0.0079 |
+| Total precision | 0.8161 | 0.7935 | -0.0226 |
+| Total recall | 0.9161 | 0.9419 | +0.0258 |
+| Total F1 | 0.8632 | 0.8614 | -0.0018 |
+| False negatives | 13 | 9 | -4 |
+| True positives | 142 | 146 | +4 |
+
+The tradeoff is that CNN2 predicts tumor more aggressively. That raises false positives from `32` to `38`, so precision and accuracy are slightly lower. For this brain MRI task, the main improvement is the reduction in missed tumor cases.
+
 ## Result Visualizations
 
 ### Total Cost Curve
@@ -457,21 +595,41 @@ Training accuracy rises sharply, while validation accuracy improves more slowly 
 
 The confusion matrix shows strong tumor detection recall, with 142 true positives and 13 false negatives across all validation folds.
 
+### CNN2 Total Cost Curve
+
+![CNN2 Total Cost Curve](results/cnn2/plots/cnn2_total_cost_curve.png)
+
+CNN2's training cost continues to decrease, while validation cost stabilizes higher. The widening gap shows why early stopping and best-epoch restoration remain important.
+
+### CNN2 Total Accuracy Curve
+
+![CNN2 Total Accuracy Curve](results/cnn2/plots/cnn2_total_accuracy_curve.png)
+
+CNN2 reaches stronger training accuracy than validation accuracy, with validation accuracy peaking earlier and then fluctuating. This reflects the higher-capacity Inception feature extractor on a small dataset.
+
+### CNN2 Total Confusion Matrix
+
+![CNN2 Total Confusion Matrix](results/cnn2/plots/cnn2_total_confusion_matrix.png)
+
+The CNN2 confusion matrix shows the main improvement over CNN1: fewer missed tumor cases, with 146 true positives and 9 false negatives across all validation folds.
+
 ## Output Files
 
 Metrics:
 
 ```text
 results/cnn1/metrics/cnn1_kfold_summary.json
+results/cnn2/metrics/cnn2_kfold_summary.json
 ```
 
 Saved best-fold parameters:
 
 ```text
 results/cnn1/metrics/updated_parameters_1.json
+results/cnn2/metrics/updated_parameters_2.json
 ```
 
-This file is generated locally after training and ignored by Git because it can become large.
+These files are generated locally after training and ignored by Git because they can become large.
 
 Per-fold plots:
 
@@ -479,6 +637,9 @@ Per-fold plots:
 results/cnn1/plots/cnn1_fold_1_accuracy_curve.png
 results/cnn1/plots/cnn1_fold_1_cost_curve.png
 results/cnn1/plots/cnn1_fold_1_confusion_matrix.png
+results/cnn2/plots/cnn2_fold_1_accuracy_curve.png
+results/cnn2/plots/cnn2_fold_1_cost_curve.png
+results/cnn2/plots/cnn2_fold_1_confusion_matrix.png
 ...
 ```
 
@@ -488,6 +649,9 @@ Total plots:
 results/cnn1/plots/cnn1_total_accuracy_curve.png
 results/cnn1/plots/cnn1_total_cost_curve.png
 results/cnn1/plots/cnn1_total_confusion_matrix.png
+results/cnn2/plots/cnn2_total_accuracy_curve.png
+results/cnn2/plots/cnn2_total_cost_curve.png
+results/cnn2/plots/cnn2_total_confusion_matrix.png
 ```
 
 Report-friendly JPG outputs:
@@ -496,6 +660,9 @@ Report-friendly JPG outputs:
 Output/CNN1Accuracy.jpg
 Output/CNN1Cost.jpg
 Output/CNN1ConfMatrix.jpg
+Output/CNN2Accuracy.jpg
+Output/CNN2Cost.jpg
+Output/CNN2ConfMatrix.jpg
 ```
 
 ## Code Structure
@@ -603,6 +770,57 @@ train_cnn1()
 evaluate_cnn1()
 ```
 
+### `cnn2_core.py`
+
+Defines the CNN2 Inception model.
+
+Responsibilities:
+
+- Initialize Inception branch parameters
+- Run two Inception blocks with branch concatenation
+- Apply same-shape max-pooling for Inception pool branches
+- Apply dropout
+- Compute binary cross-entropy cost
+- Add L2 regularization
+- Run backpropagation through all branches
+- Run Adam parameter updates
+- Predict labels and probabilities
+- Load saved parameter JSON
+
+Important functions:
+
+```text
+initialize_cnn2_parameters()
+cnn2_forward()
+compute_cost()
+cnn2_backward()
+initialize_adam()
+adam_update()
+predict_cnn2()
+load_cnn2_parameters_from_json()
+```
+
+### `cnn2_train.py`
+
+Contains reusable CNN2 training helpers outside the full k-fold experiment.
+
+Responsibilities:
+
+- Create mini-batches
+- Apply learning rate decay
+- Train CNN2 on a normal train/validation split
+- Evaluate CNN2 on test data
+
+Important functions:
+
+```text
+create_mini_batches()
+learning_rate_decay()
+accuracy()
+train_cnn2()
+evaluate_cnn2()
+```
+
 ### `main_cnn1.py`
 
 Main experiment runner.
@@ -633,6 +851,35 @@ save_experiment_summary()
 save_updated_parameters()
 ```
 
+### `main_cnn2.py`
+
+Main CNN2 Inception experiment runner.
+
+Responsibilities:
+
+- Create CNN2 output folders
+- Load the same dataset and stratified folds
+- Train each fold
+- Print progress bars
+- Apply dynamic early stopping
+- Restore best fold parameters
+- Compute metrics
+- Save plots
+- Save summary JSON
+- Save best-fold parameters
+
+Important functions:
+
+```text
+run_cnn2_experiment()
+train_one_fold()
+classification_metrics()
+summarize_kfold_metrics()
+summarize_total_metrics()
+save_experiment_summary()
+save_updated_parameters()
+```
+
 ## Prediction With Saved Parameters
 
 After training, load the best-fold saved weights:
@@ -645,6 +892,18 @@ parameters = load_cnn1_parameters_from_json(
 )
 
 predictions, probabilities = predict_cnn1(X_new, parameters)
+```
+
+For CNN2:
+
+```python
+from cnn2_core import load_cnn2_parameters_from_json, predict_cnn2
+
+parameters = load_cnn2_parameters_from_json(
+    "results/cnn2/metrics/updated_parameters_2.json"
+)
+
+predictions, probabilities = predict_cnn2(X_new, parameters)
 ```
 
 `X_new` must be preprocessed the same way as training images:
@@ -664,6 +923,7 @@ data/
 archive.zip
 *.zip
 results/cnn1/metrics/updated_parameters_*.json
+results/cnn2/metrics/updated_parameters_*.json
 __pycache__/
 ```
 
@@ -672,14 +932,14 @@ This keeps the repository lightweight and focused on source code, result summari
 ## Limitations
 
 - The model is written from scratch, so training is much slower than PyTorch or TensorFlow.
+- CNN2's full 5-fold Inception run took about 12 hours locally because all convolution and backpropagation operations are manual NumPy loops.
 - The dataset is small.
 - The dataset is class-imbalanced.
-- The current model has high recall but still produces false positives.
-- Only CNN Base is implemented so far.
+- CNN2 improves tumor recall but still produces more false positives than CNN1.
+- CNN Base and CNN2 Inception are implemented; ResNet is still planned.
 
 ## Next Steps
 
-- Implement InceptionNet from scratch using NumPy
 - Implement ResNet from scratch using NumPy
 - Compare all three architectures using the same folds and metrics
 - Add a single-image prediction script

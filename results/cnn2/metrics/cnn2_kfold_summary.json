@@ -1,0 +1,167 @@
+{
+    "config": {
+        "data_dir": "data",
+        "image_size": [
+            64,
+            64
+        ],
+        "grayscale": true,
+        "k": 5,
+        "epochs": 20,
+        "mini_batch_size": 8,
+        "initial_learning_rate": 0.001,
+        "decay_rate": 0.02,
+        "conv_keep_prob": 0.85,
+        "dense_keep_prob": 0.75,
+        "lambd": 0.005,
+        "block1_filters": [
+            4,
+            4,
+            4
+        ],
+        "block2_filters": [
+            4,
+            4,
+            4
+        ],
+        "early_stopping": true,
+        "min_epochs": 5,
+        "patience": 3,
+        "min_delta": 0.001,
+        "overfit_gap": 0.08,
+        "overfit_patience": 2,
+        "seed": 42
+    },
+    "summary": {
+        "mean_accuracy": 0.8141176470588235,
+        "std_accuracy": 0.03044107385287871,
+        "mean_precision": 0.7958202305404601,
+        "std_precision": 0.03347811830519689,
+        "mean_recall": 0.9419354838709678,
+        "std_recall": 0.04740947889257765,
+        "mean_f1": 0.8613378043525103,
+        "std_f1": 0.02063720107777764
+    },
+    "fold_metrics": [
+        {
+            "accuracy": 0.8431372549019608,
+            "precision": 0.8108108108108109,
+            "recall": 0.967741935483871,
+            "f1": 0.8823529411764706,
+            "TP": 30,
+            "TN": 13,
+            "FP": 7,
+            "FN": 1,
+            "confusion_matrix": [
+                [
+                    13,
+                    7
+                ],
+                [
+                    1,
+                    30
+                ]
+            ]
+        },
+        {
+            "accuracy": 0.803921568627451,
+            "precision": 0.8181818181818182,
+            "recall": 0.8709677419354839,
+            "f1": 0.84375,
+            "TP": 27,
+            "TN": 14,
+            "FP": 6,
+            "FN": 4,
+            "confusion_matrix": [
+                [
+                    14,
+                    6
+                ],
+                [
+                    4,
+                    27
+                ]
+            ]
+        },
+        {
+            "accuracy": 0.8235294117647058,
+            "precision": 0.8235294117647058,
+            "recall": 0.9032258064516129,
+            "f1": 0.8615384615384616,
+            "TP": 28,
+            "TN": 14,
+            "FP": 6,
+            "FN": 3,
+            "confusion_matrix": [
+                [
+                    14,
+                    6
+                ],
+                [
+                    3,
+                    28
+                ]
+            ]
+        },
+        {
+            "accuracy": 0.76,
+            "precision": 0.7317073170731707,
+            "recall": 0.967741935483871,
+            "f1": 0.8333333333333334,
+            "TP": 30,
+            "TN": 8,
+            "FP": 11,
+            "FN": 1,
+            "confusion_matrix": [
+                [
+                    8,
+                    11
+                ],
+                [
+                    1,
+                    30
+                ]
+            ]
+        },
+        {
+            "accuracy": 0.84,
+            "precision": 0.7948717948717948,
+            "recall": 1.0,
+            "f1": 0.8857142857142858,
+            "TP": 31,
+            "TN": 11,
+            "FP": 8,
+            "FN": 0,
+            "confusion_matrix": [
+                [
+                    11,
+                    8
+                ],
+                [
+                    0,
+                    31
+                ]
+            ]
+        }
+    ],
+    "total_metrics": {
+        "accuracy": 0.8142292490118577,
+        "precision": 0.7934782608695652,
+        "recall": 0.9419354838709677,
+        "f1": 0.8613569321533923,
+        "TP": 146,
+        "TN": 60,
+        "FP": 38,
+        "FN": 9,
+        "confusion_matrix": [
+            [
+                60,
+                38
+            ],
+            [
+                9,
+                146
+            ]
+        ]
+    }
+}
